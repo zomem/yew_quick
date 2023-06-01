@@ -5,7 +5,7 @@
 |  组件              | 说明  |
 |  ----             | ----  |
 | Block             | 块（Fragment） |
-| Box               | 同div |
+| Box               | 同div，不包括flex |
 | Flex              | 同flex布局的div |
 | Image             | 图片 |
 | Line              | 线   |
@@ -20,7 +20,7 @@ use yew_quick::{Box, Flex, FlexWay, Text, Image};
 
 #[function_component]
 fn App() -> Html {
-    // size 表示 长 宽
+    // size 表示 宽 高
     html! {
         <Box size="100% 500">
             <Flex flex={FlexWay::Frbc} size="200 600">
