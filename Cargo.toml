@@ -2,8 +2,15 @@
 name = "yew_quick"
 version = "0.1.0"
 edition = "2021"
+authors = ["zomem"]
+description = "yew 框架快速开发组件库"
+license = "MIT"
+readme = "README.md"
+include = ["/src"]
+repository = "https://github.com/zomem/yew_quick"
+keywords = ["yew", "component"]
+categories = ["web"]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 stylist = {version = "0.12", features = ["yew_integration"]}
