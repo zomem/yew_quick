@@ -1,4 +1,4 @@
-use yew::{function_component, html, use_memo, Callback, Html, MouseEvent, Properties};
+use yew::{function_component, html, use_memo, Callback, Html, MouseEvent, NodeRef, Properties};
 
 use regex::Regex;
 use stylist::css;
@@ -24,7 +24,11 @@ struct ImageCss {
 
     pointer_events: String,
 
-    d: String,
+    duration: String,
+    hover_opacity: String,
+    hover_padding: String,
+    hover_margin: String,
+    hover_radius: String,
     hover_width: String,
     hover_height: String,
 }
@@ -49,7 +53,11 @@ struct ImageCssProps {
 
     pointer_events: PointerEvents,
 
-    d: String,
+    duration: String,
+    h_opacity: String,
+    h_padding: String,
+    h_margin: String,
+    h_radius: String,
     h_size: String,
 }
 
@@ -84,7 +92,15 @@ pub struct ImageProps {
     pub opacity: String,
 
     #[prop_or(String::from("0"))]
-    pub d: String,
+    pub duration: String,
+    #[prop_or(String::from(""))]
+    pub h_opacity: String,
+    #[prop_or(String::from(""))]
+    pub h_padding: String,
+    #[prop_or(String::from(""))]
+    pub h_margin: String,
+    #[prop_or(String::from(""))]
+    pub h_radius: String,
     #[prop_or(String::from(""))]
     pub h_size: String,
 
@@ -93,6 +109,8 @@ pub struct ImageProps {
 
     #[prop_or_default]
     pub onclick: Callback<MouseEvent>,
+    #[prop_or_default]
+    pub node: NodeRef,
 }
 
 /// ### 使用示例
@@ -110,8 +128,12 @@ pub struct ImageProps {
 /// z_index: String,
 /// opacity: String,
 /// pointer_events: PointerEvents,
-/// d: String,
+/// duration: String,
 /// h_size: String,
+/// h_opacity: String,  //hover 样式 "0.7"
+/// h_padding: String,  //hover 样式 "0 0 12 12"
+/// h_margin: String,  //hover 样式 "0 0 12 12"
+/// h_radius: String,    //hover 样式 "12"
 ///```
 ///
 #[function_component]
@@ -131,8 +153,13 @@ pub fn Image(props: &ImageProps) -> Html {
         z_index: props.z_index.clone(),
         opacity: props.opacity.clone(),
 
-        d: props.d.clone(),
         pointer_events: props.pointer_events.clone(),
+
+        duration: props.duration.clone(),
+        h_opacity: props.h_opacity.clone(),
+        h_padding: props.h_padding.clone(),
+        h_margin: props.h_margin.clone(),
+        h_radius: props.h_radius.clone(),
         h_size: props.h_size.clone(),
     };
 
@@ -161,10 +188,6 @@ pub fn Image(props: &ImageProps) -> Html {
                 temp_h_size[1]
             };
 
-            let temp_padding = box_css_p.padding.as_str();
-            let temp_margin = box_css_p.margin.as_str();
-            let temp_radius = box_css_p.radius.as_str();
-
             let temp_width_op = op_rex.replace_all(temp_width, " $1 ").to_string();
             let tmep_width_f = if temp_width.contains("%") {
                 format!("{}", temp_width)
@@ -191,6 +214,10 @@ pub fn Image(props: &ImageProps) -> Html {
                 format!("{}{}", temp_h_height, "px")
             };
 
+            let temp_padding = box_css_p.padding.as_str();
+            let temp_margin = box_css_p.margin.as_str();
+            let temp_radius = box_css_p.radius.as_str();
+
             let temp_padding_c = temp_padding
                 .split(" ")
                 .map(|x| {
@@ -202,6 +229,11 @@ pub fn Image(props: &ImageProps) -> Html {
                 })
                 .collect::<Vec<String>>()
                 .join(" ");
+            let padding_value = if w_rex.is_match(temp_padding) {
+                temp_padding.to_owned()
+            } else {
+                temp_padding_c
+            };
             let temp_margin_c = temp_margin
                 .split(" ")
                 .map(|x| {
@@ -213,6 +245,11 @@ pub fn Image(props: &ImageProps) -> Html {
                 })
                 .collect::<Vec<String>>()
                 .join(" ");
+            let margin_value = if w_rex.is_match(temp_margin) {
+                temp_margin.to_owned()
+            } else {
+                temp_margin_c
+            };
             let temp_radius_c = temp_radius
                 .split(" ")
                 .map(|x| {
@@ -225,6 +262,11 @@ pub fn Image(props: &ImageProps) -> Html {
                 .collect::<Vec<String>>()
                 .join(" ");
 
+            let radius_value = if w_rex.is_match(temp_radius) {
+                temp_radius.to_owned()
+            } else {
+                temp_radius_c
+            };
             ImageCss {
                 width: if temp_width == "auto" {
                     "auto".to_owned()
@@ -240,21 +282,9 @@ pub fn Image(props: &ImageProps) -> Html {
                 } else {
                     temp_height_f
                 },
-                padding: if w_rex.is_match(temp_padding) {
-                    temp_padding.to_owned()
-                } else {
-                    temp_padding_c
-                },
-                margin: if w_rex.is_match(temp_margin) {
-                    temp_margin.to_owned()
-                } else {
-                    temp_margin_c
-                },
-                border_radius: if w_rex.is_match(temp_radius) {
-                    temp_radius.to_owned()
-                } else {
-                    temp_radius_c
-                },
+                padding: padding_value.clone(),
+                margin: margin_value.clone(),
+                border_radius: radius_value.clone(),
 
                 cursor: box_css_p.cursor.get_name(),
                 position: box_css_p.position.get_name(),
@@ -265,8 +295,71 @@ pub fn Image(props: &ImageProps) -> Html {
                 z_index: box_css_p.z_index.clone(),
                 opacity: box_css_p.opacity.clone(),
 
-                d: box_css_p.d.clone(),
                 pointer_events: box_css_p.pointer_events.get_name(),
+
+                duration: box_css_p.duration.clone(),
+                hover_opacity: if box_css_p.h_opacity == String::default() {
+                    box_css_p.opacity.clone()
+                } else {
+                    box_css_p.h_opacity.clone()
+                },
+                hover_padding: if box_css_p.h_padding == String::default() {
+                    padding_value
+                } else {
+                    let temp = box_css_p.h_padding.as_str();
+                    if w_rex.is_match(temp) {
+                        temp.to_string()
+                    } else {
+                        temp.split(" ")
+                            .map(|x| {
+                                if x.contains("%") {
+                                    x.to_string()
+                                } else {
+                                    x.to_string() + "px"
+                                }
+                            })
+                            .collect::<Vec<String>>()
+                            .join(" ")
+                    }
+                },
+                hover_margin: if box_css_p.h_margin == String::default() {
+                    margin_value
+                } else {
+                    let temp = box_css_p.h_margin.as_str();
+                    if w_rex.is_match(temp) {
+                        temp.to_string()
+                    } else {
+                        temp.split(" ")
+                            .map(|x| {
+                                if x.contains("%") {
+                                    x.to_string()
+                                } else {
+                                    x.to_string() + "px"
+                                }
+                            })
+                            .collect::<Vec<String>>()
+                            .join(" ")
+                    }
+                },
+                hover_radius: if box_css_p.h_radius == String::default() {
+                    radius_value
+                } else {
+                    let temp = box_css_p.h_radius.as_str();
+                    if w_rex.is_match(temp) {
+                        temp.to_string()
+                    } else {
+                        temp.split(" ")
+                            .map(|x| {
+                                if x.contains("%") || x.contains("/") {
+                                    x.to_string()
+                                } else {
+                                    x.to_string() + "px"
+                                }
+                            })
+                            .collect::<Vec<String>>()
+                            .join(" ")
+                    }
+                },
                 hover_width: if temp_h_width == "auto" {
                     "auto".to_owned()
                 } else if w_rex.is_match(temp_h_width) {
@@ -308,11 +401,15 @@ pub fn Image(props: &ImageProps) -> Html {
 
             pointer-events: ${pointer_events};
 
-            transition: all ${d}s;
+            transition: all ${duration}s;
 
             &:hover {
                 width: ${hover_width};
                 height: ${hover_height};
+                padding: ${hover_padding};
+                margin: ${hover_margin};
+                border-radius: ${hover_radius};
+                opacity: ${hover_opacity};
             }
         "#,
         width = box_css.width,
@@ -328,7 +425,11 @@ pub fn Image(props: &ImageProps) -> Html {
         left = box_css.left,
         z_index = box_css.z_index,
         opacity = box_css.opacity,
-        d = box_css.d,
+        duration = box_css.duration,
+        hover_opacity = box_css.hover_opacity,
+        hover_padding = box_css.hover_padding,
+        hover_margin = box_css.hover_margin,
+        hover_radius = box_css.hover_radius,
         pointer_events = box_css.pointer_events,
         hover_width = box_css.hover_width,
         hover_height = box_css.hover_height,
@@ -340,6 +441,6 @@ pub fn Image(props: &ImageProps) -> Html {
     };
 
     html! {
-        <img {class} onclick={do_click} src={props.src.clone()} />
+        <img {class} onclick={do_click} src={props.src.clone()} ref={props.node.clone()}/>
     }
 }

@@ -1,4 +1,6 @@
-use yew::{function_component, html, use_memo, Callback, Children, Html, MouseEvent, Properties};
+use yew::{
+    function_component, html, use_memo, Callback, Children, Html, MouseEvent, NodeRef, Properties,
+};
 
 use regex::Regex;
 use stylist::css;
@@ -50,16 +52,28 @@ struct FlexCss {
     text_align: String,
     word_break: String,
     flex_shrink: String,
+
     flex_direction: String,
     justify_content: String,
     align_items: String,
 
-    d: String,
+    duration: String,
+    hover_opacity: String,
+    hover_padding: String,
+    hover_margin: String,
+    hover_radius: String,
+    hover_border_width: String,
+    hover_border_color: String,
     hover_bg_color: String,
     hover_color: String,
     hover_shadow: String,
     hover_width: String,
     hover_height: String,
+
+    dark_bg_color: String,
+    dark_shadow: String,
+    dark_border_color: String,
+    dark_color: String,
 }
 
 #[derive(Clone, PartialEq)]
@@ -103,11 +117,22 @@ struct FlexCssProps {
     word_break: WordBreak,
     flex_shrink: String,
 
-    d: String,
+    duration: String,
+    h_opacity: String,
+    h_padding: String,
+    h_margin: String,
+    h_radius: String,
+    h_border_width: String,
+    h_border_color: String,
     h_bg_color: String,
     h_color: String,
     h_shadow: String,
     h_size: String,
+
+    d_bg_color: String,
+    d_shadow: String,
+    d_border_color: String,
+    d_color: String,
 }
 
 #[derive(Properties, Clone, PartialEq)]
@@ -187,7 +212,19 @@ pub struct FlexProps {
     pub flex_shrink: String,
 
     #[prop_or(String::from("0"))]
-    pub d: String,
+    pub duration: String,
+    #[prop_or(String::from(""))]
+    pub h_opacity: String,
+    #[prop_or(String::from(""))]
+    pub h_padding: String,
+    #[prop_or(String::from(""))]
+    pub h_margin: String,
+    #[prop_or(String::from(""))]
+    pub h_radius: String,
+    #[prop_or(String::from(""))]
+    pub h_border_width: String,
+    #[prop_or(String::from(""))]
+    pub h_border_color: String,
     #[prop_or(String::from(""))]
     pub h_bg_color: String,
     #[prop_or(String::from(""))]
@@ -197,10 +234,21 @@ pub struct FlexProps {
     #[prop_or(String::from(""))]
     pub h_size: String,
 
+    #[prop_or(String::from(""))]
+    pub d_bg_color: String,
+    #[prop_or(String::from(""))]
+    pub d_shadow: String,
+    #[prop_or(String::from(""))]
+    pub d_border_color: String,
+    #[prop_or(String::from(""))]
+    pub d_color: String,
+
     #[prop_or_default]
     pub children: Children,
     #[prop_or_default]
     pub onclick: Callback<MouseEvent>,
+    #[prop_or_default]
+    pub node: NodeRef,
 }
 
 /// ### 使用示例
@@ -241,11 +289,21 @@ pub struct FlexProps {
 /// text_align: TextAlign,
 /// word_break: WordBreak,
 /// flex_shrink: String,
-/// d: String, // transition 时间 s
+/// duration: String, // transition 时间 s
+/// h_opacity: String,  //hover 样式 "0.7"
+/// h_padding: String,  //hover 样式 "0 0 12 12"
+/// h_margin: String,  //hover 样式 "0 0 12 12"
+/// h_radius: String,    //hover 样式 "12"
+/// h_border_width: String, //hover 样式 "12"
+/// h_border_color: String, //hover 样式 "#ffa"
 /// h_bg_color: String,  // hover 样式
 /// h_color: String,  // hover 样式
 /// h_shadow: String,  // hover 样式
 /// h_size: String,  // hover 样式
+/// d_bg_color: String,  // dark 模式
+/// d_shadow: String, // dark 模式
+/// d_border_color: String, // dark 模式
+/// d_color: String, // dark 模式
 /// ```
 #[function_component]
 pub fn Flex(props: &FlexProps) -> Html {
@@ -288,11 +346,22 @@ pub fn Flex(props: &FlexProps) -> Html {
         word_break: props.word_break.clone(),
         flex_shrink: props.flex_shrink.clone(),
 
-        d: props.d.clone(),
+        duration: props.duration.clone(),
+        h_opacity: props.h_opacity.clone(),
+        h_padding: props.h_padding.clone(),
+        h_margin: props.h_margin.clone(),
+        h_radius: props.h_radius.clone(),
+        h_border_width: props.h_border_width.clone(),
+        h_border_color: props.h_border_color.clone(),
         h_bg_color: props.h_bg_color.clone(),
         h_color: props.h_color.clone(),
         h_shadow: props.h_shadow.clone(),
         h_size: props.h_size.clone(),
+
+        d_bg_color: props.d_bg_color.clone(),
+        d_shadow: props.d_shadow.clone(),
+        d_border_color: props.d_border_color.clone(),
+        d_color: props.d_color.clone(),
     };
 
     let box_css = use_memo(
@@ -350,11 +419,6 @@ pub fn Flex(props: &FlexProps) -> Html {
                 temp_max_size[1]
             };
 
-            let temp_padding = box_css_p.padding.as_str();
-            let temp_margin = box_css_p.margin.as_str();
-            let temp_radius = box_css_p.radius.as_str();
-            let temp_border_width = box_css_p.border_width.as_str();
-
             let temp_width_op = op_rex.replace_all(temp_width, " $1 ").to_string();
             let tmep_width_f = if temp_width.contains("%") {
                 format!("{}", temp_width)
@@ -406,6 +470,11 @@ pub fn Flex(props: &FlexProps) -> Html {
                 format!("{}{}", temp_max_height, "px")
             };
 
+            let temp_padding = box_css_p.padding.as_str();
+            let temp_margin = box_css_p.margin.as_str();
+            let temp_radius = box_css_p.radius.as_str();
+            let temp_border_width = box_css_p.border_width.as_str();
+
             let temp_padding_c = temp_padding
                 .split(" ")
                 .map(|x| {
@@ -417,6 +486,11 @@ pub fn Flex(props: &FlexProps) -> Html {
                 })
                 .collect::<Vec<String>>()
                 .join(" ");
+            let padding_value = if w_rex.is_match(temp_padding) {
+                temp_padding.to_owned()
+            } else {
+                temp_padding_c
+            };
             let temp_margin_c = temp_margin
                 .split(" ")
                 .map(|x| {
@@ -428,6 +502,11 @@ pub fn Flex(props: &FlexProps) -> Html {
                 })
                 .collect::<Vec<String>>()
                 .join(" ");
+            let margin_value = if w_rex.is_match(temp_margin) {
+                temp_margin.to_owned()
+            } else {
+                temp_margin_c
+            };
             let temp_radius_c = temp_radius
                 .split(" ")
                 .map(|x| {
@@ -439,6 +518,11 @@ pub fn Flex(props: &FlexProps) -> Html {
                 })
                 .collect::<Vec<String>>()
                 .join(" ");
+            let radius_value = if w_rex.is_match(temp_radius) {
+                temp_radius.to_owned()
+            } else {
+                temp_radius_c
+            };
             let temp_border_width_c = temp_border_width
                 .split(" ")
                 .map(|x| {
@@ -450,6 +534,11 @@ pub fn Flex(props: &FlexProps) -> Html {
                 })
                 .collect::<Vec<String>>()
                 .join(" ");
+            let border_width_value = if w_rex.is_match(temp_border_width) {
+                temp_border_width.to_owned()
+            } else {
+                temp_border_width_c
+            };
             FlexCss {
                 flex_direction: if f_vec[0] == "center".to_owned() {
                     "column".to_string()
@@ -472,27 +561,11 @@ pub fn Flex(props: &FlexProps) -> Html {
                 } else {
                     temp_height_f
                 },
-                padding: if w_rex.is_match(temp_padding) {
-                    temp_padding.to_owned()
-                } else {
-                    temp_padding_c
-                },
-                margin: if w_rex.is_match(temp_margin) {
-                    temp_margin.to_owned()
-                } else {
-                    temp_margin_c
-                },
+                padding: padding_value.clone(),
+                margin: margin_value.clone(),
                 box_sizing: box_css_p.box_sizing.get_name(),
-                border_radius: if w_rex.is_match(temp_radius) {
-                    temp_radius.to_owned()
-                } else {
-                    temp_radius_c
-                },
-                border_width: if w_rex.is_match(temp_border_width) {
-                    temp_border_width.to_owned()
-                } else {
-                    temp_border_width_c
-                },
+                border_radius: radius_value.clone(),
+                border_width: border_width_value.clone(),
                 border_color: box_css_p.border_color.clone(),
                 border_style: box_css_p.border_style.get_name(),
                 background_color: box_css_p.bg_color.clone(),
@@ -570,19 +643,105 @@ pub fn Flex(props: &FlexProps) -> Html {
                 word_break: box_css_p.word_break.get_name(),
                 flex_shrink: box_css_p.flex_shrink.clone(),
 
-                d: box_css_p.d.clone(),
+                duration: box_css_p.duration.clone(),
+                hover_opacity: if box_css_p.h_opacity == String::default() {
+                    box_css_p.opacity.clone()
+                } else {
+                    box_css_p.h_opacity.clone()
+                },
+                hover_padding: if box_css_p.h_padding == String::default() {
+                    padding_value
+                } else {
+                    let temp = box_css_p.h_padding.as_str();
+                    if w_rex.is_match(temp) {
+                        temp.to_string()
+                    } else {
+                        temp.split(" ")
+                            .map(|x| {
+                                if x.contains("%") {
+                                    x.to_string()
+                                } else {
+                                    x.to_string() + "px"
+                                }
+                            })
+                            .collect::<Vec<String>>()
+                            .join(" ")
+                    }
+                },
+                hover_margin: if box_css_p.h_margin == String::default() {
+                    margin_value
+                } else {
+                    let temp = box_css_p.h_margin.as_str();
+                    if w_rex.is_match(temp) {
+                        temp.to_string()
+                    } else {
+                        temp.split(" ")
+                            .map(|x| {
+                                if x.contains("%") {
+                                    x.to_string()
+                                } else {
+                                    x.to_string() + "px"
+                                }
+                            })
+                            .collect::<Vec<String>>()
+                            .join(" ")
+                    }
+                },
+                hover_radius: if box_css_p.h_radius == String::default() {
+                    radius_value
+                } else {
+                    let temp = box_css_p.h_radius.as_str();
+                    if w_rex.is_match(temp) {
+                        temp.to_string()
+                    } else {
+                        temp.split(" ")
+                            .map(|x| {
+                                if x.contains("%") || x.contains("/") {
+                                    x.to_string()
+                                } else {
+                                    x.to_string() + "px"
+                                }
+                            })
+                            .collect::<Vec<String>>()
+                            .join(" ")
+                    }
+                },
+                hover_border_width: if box_css_p.h_border_width == String::default() {
+                    border_width_value
+                } else {
+                    let temp = box_css_p.h_border_width.as_str();
+                    if w_rex.is_match(temp) {
+                        temp.to_string()
+                    } else {
+                        temp.split(" ")
+                            .map(|x| {
+                                if x.contains("%") {
+                                    x.to_string()
+                                } else {
+                                    x.to_string() + "px"
+                                }
+                            })
+                            .collect::<Vec<String>>()
+                            .join(" ")
+                    }
+                },
+                hover_border_color: if box_css_p.h_border_color == String::default() {
+                    "none".to_string()
+                } else {
+                    box_css_p.h_border_color.clone()
+                },
                 hover_bg_color: if box_css_p.h_bg_color == String::default() {
-                    box_css_p.bg_color.clone()
+                    "none".to_string()
                 } else {
                     box_css_p.h_bg_color.clone()
                 },
                 hover_color: if box_css_p.h_color == String::default() {
-                    box_css_p.color.clone()
+                    "none".to_string()
                 } else {
                     box_css_p.h_color.clone()
                 },
-                hover_shadow: if box_css_p.h_color == String::default() {
-                    box_css_p.shadow.clone()
+                hover_shadow: if box_css_p.h_shadow == String::default() {
+                    "none".to_string()
                 } else {
                     box_css_p.h_shadow.clone()
                 },
@@ -599,6 +758,26 @@ pub fn Flex(props: &FlexProps) -> Html {
                     temp_h_height_op
                 } else {
                     temp_h_height_f
+                },
+                dark_bg_color: if box_css_p.d_bg_color == String::default() {
+                    box_css_p.bg_color.clone()
+                } else {
+                    box_css_p.d_bg_color.clone()
+                },
+                dark_shadow: if box_css_p.d_shadow == String::default() {
+                    box_css_p.shadow.clone()
+                } else {
+                    box_css_p.d_shadow.clone()
+                },
+                dark_border_color: if box_css_p.d_border_color == String::default() {
+                    box_css_p.border_color.clone()
+                } else {
+                    box_css_p.d_border_color.clone()
+                },
+                dark_color: if box_css_p.d_color == String::default() {
+                    box_css_p.color.clone()
+                } else {
+                    box_css_p.d_color.clone()
                 },
             }
         },
@@ -655,7 +834,7 @@ pub fn Flex(props: &FlexProps) -> Html {
             flex-shrink: ${flex_shrink};
 
 
-            transition: all ${d}s;
+            transition: all ${duration}s;
 
             &:hover {
                 background-color: ${hover_bg_color};
@@ -663,6 +842,21 @@ pub fn Flex(props: &FlexProps) -> Html {
                 box-shadow: ${hover_shadow};
                 width: ${hover_width};
                 height: ${hover_height};
+                padding: ${hover_padding};
+                margin: ${hover_margin};
+                border-radius: ${hover_radius};
+                border-width: ${hover_border_width};
+                border-color: ${hover_border_color};
+                opacity: ${hover_opacity};
+            }
+
+            @media (prefers-color-scheme: dark) {
+              & {
+                background-color: ${dark_bg_color};
+                color: ${dark_color};
+                box-shadow: ${dark_shadow};
+                border-color: ${dark_border_color};
+              }
             }
         "#,
         flex_direction = box_css.flex_direction,
@@ -706,12 +900,22 @@ pub fn Flex(props: &FlexProps) -> Html {
         text_align = box_css.text_align,
         word_break = box_css.word_break,
         flex_shrink = box_css.flex_shrink,
-        d = box_css.d,
+        duration = box_css.duration,
+        hover_opacity = box_css.hover_opacity,
+        hover_padding = box_css.hover_padding,
+        hover_margin = box_css.hover_margin,
+        hover_radius = box_css.hover_radius,
+        hover_border_width = box_css.hover_border_width,
+        hover_border_color = box_css.hover_border_color,
         hover_bg_color = box_css.hover_bg_color,
         hover_color = box_css.hover_color,
         hover_shadow = box_css.hover_shadow,
         hover_width = box_css.hover_width,
         hover_height = box_css.hover_height,
+        dark_bg_color = box_css.dark_bg_color,
+        dark_shadow = box_css.dark_shadow,
+        dark_border_color = box_css.dark_border_color,
+        dark_color = box_css.dark_color,
     );
 
     let do_click = {
@@ -720,7 +924,7 @@ pub fn Flex(props: &FlexProps) -> Html {
     };
 
     html! {
-        <div {class} onclick={do_click}>
+        <div {class} onclick={do_click} ref={props.node.clone()}>
         { for props.children.iter() }
         </div>
     }

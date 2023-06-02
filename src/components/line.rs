@@ -15,11 +15,20 @@ struct LineCss {
     background_color: String,
     background_image: String,
     cursor: String,
-    d: String,
+
+    opacity: String,
+
+    duration: String,
+    hover_opacity: String,
+    hover_margin: String,
+    hover_radius: String,
     hover_bg_color: String,
     hover_width: String,
     hover_height: String,
+
     flex_shrink: String,
+
+    dark_bg_color: String,
 }
 
 #[derive(Clone, PartialEq)]
@@ -31,10 +40,19 @@ struct LineCssProps {
     bg_image: String,
 
     cursor: Cursor,
-    d: String,
+
+    opacity: String,
+
+    duration: String,
+    h_opacity: String,
+    h_margin: String,
+    h_radius: String,
     h_bg_color: String,
     h_size: String,
+
     flex_shrink: String,
+
+    d_bg_color: String,
 }
 
 #[derive(Properties, Clone, PartialEq)]
@@ -56,27 +74,42 @@ pub struct LineProps {
     #[prop_or(String::from("1"))]
     pub flex_shrink: String,
 
+    #[prop_or(String::from("inherit"))]
+    pub opacity: String,
+
     #[prop_or(String::from("0"))]
-    pub d: String,
+    pub duration: String,
+    #[prop_or(String::from(""))]
+    pub h_opacity: String,
+    #[prop_or(String::from(""))]
+    pub h_margin: String,
+    #[prop_or(String::from(""))]
+    pub h_radius: String,
     #[prop_or(String::from(""))]
     pub h_bg_color: String,
     #[prop_or(String::from(""))]
     pub h_size: String,
+
+    #[prop_or(String::from(""))]
+    pub d_bg_color: String,
 }
 
 /// ### 使用示例
 ///```
 /// size: String,
 /// radius: String,
-
 /// bg_color: String,
 /// bg_image: String,
-
 /// cursor: Cursor,
-/// d: String,
+/// flex_shrink: String,
+/// opacity: String,
+/// duration: String,
+/// h_opacity: String,  //hover 样式 "0.7"
+/// h_margin: String,  //hover 样式 "0 0 12 12"
+/// h_radius: String,    //hover 样式 "12"
 /// h_bg_color: String,
 /// h_size: String,
-/// flex_shrink: String,
+/// d_bg_color: String,  // dark 模式
 ///```
 ///
 #[function_component]
@@ -90,12 +123,17 @@ pub fn Line(props: &LineProps) -> Html {
         bg_image: props.bg_image.clone(),
 
         cursor: props.cursor.clone(),
-
+        opacity: props.opacity.clone(),
         flex_shrink: props.flex_shrink.clone(),
 
-        d: props.d.clone(),
+        duration: props.duration.clone(),
+        h_opacity: props.h_opacity.clone(),
+        h_margin: props.h_margin.clone(),
+        h_radius: props.h_radius.clone(),
         h_bg_color: props.h_bg_color.clone(),
         h_size: props.h_size.clone(),
+
+        d_bg_color: props.d_bg_color.clone(),
     };
 
     let box_css = use_memo(
@@ -123,8 +161,6 @@ pub fn Line(props: &LineProps) -> Html {
                 temp_h_size[1]
             };
 
-            let temp_radius = box_css_p.radius.as_str();
-
             let temp_width_op = op_rex.replace_all(temp_width, " $1 ").to_string();
             let tmep_width_f = if temp_width.contains("%") {
                 format!("{}", temp_width)
@@ -151,6 +187,8 @@ pub fn Line(props: &LineProps) -> Html {
                 format!("{}{}", temp_h_height, "px")
             };
 
+            let temp_radius = box_css_p.radius.as_str();
+
             let temp_radius_c = temp_radius
                 .split(" ")
                 .map(|x| {
@@ -162,6 +200,11 @@ pub fn Line(props: &LineProps) -> Html {
                 })
                 .collect::<Vec<String>>()
                 .join(" ");
+            let radius_value = if w_rex.is_match(temp_radius) {
+                temp_radius.to_owned()
+            } else {
+                temp_radius_c
+            };
 
             let p_top = match props.safe {
                 SafeType::None => "0".to_owned(),
@@ -189,13 +232,10 @@ pub fn Line(props: &LineProps) -> Html {
                 } else {
                     temp_height_f
                 },
+                opacity: box_css_p.opacity.clone(),
                 padding_top: p_top,
                 padding_bottom: p_bottom,
-                border_radius: if w_rex.is_match(temp_radius) {
-                    temp_radius.to_owned()
-                } else {
-                    temp_radius_c
-                },
+                border_radius: radius_value.clone(),
                 background_color: box_css_p.bg_color.clone(),
                 background_image: if box_css_p.bg_image == "0" {
                     "none".to_owned()
@@ -209,9 +249,52 @@ pub fn Line(props: &LineProps) -> Html {
                 cursor: box_css_p.cursor.get_name(),
                 flex_shrink: box_css_p.flex_shrink.clone(),
 
-                d: box_css_p.d.clone(),
+                duration: box_css_p.duration.clone(),
+                hover_opacity: if box_css_p.h_opacity == String::default() {
+                    box_css_p.opacity.clone()
+                } else {
+                    box_css_p.h_opacity.clone()
+                },
+                hover_margin: if box_css_p.h_margin == String::default() {
+                    "0".to_string()
+                } else {
+                    let temp = box_css_p.h_margin.as_str();
+                    if w_rex.is_match(temp) {
+                        temp.to_string()
+                    } else {
+                        temp.split(" ")
+                            .map(|x| {
+                                if x.contains("%") {
+                                    x.to_string()
+                                } else {
+                                    x.to_string() + "px"
+                                }
+                            })
+                            .collect::<Vec<String>>()
+                            .join(" ")
+                    }
+                },
+                hover_radius: if box_css_p.h_radius == String::default() {
+                    radius_value
+                } else {
+                    let temp = box_css_p.h_radius.as_str();
+                    if w_rex.is_match(temp) {
+                        temp.to_string()
+                    } else {
+                        temp.split(" ")
+                            .map(|x| {
+                                if x.contains("%") || x.contains("/") {
+                                    x.to_string()
+                                } else {
+                                    x.to_string() + "px"
+                                }
+                            })
+                            .collect::<Vec<String>>()
+                            .join(" ")
+                    }
+                },
                 hover_bg_color: if box_css_p.h_bg_color == String::default() {
-                    box_css_p.bg_color.clone()
+                    "none".to_string()
                 } else {
                     box_css_p.h_bg_color.clone()
                 },
@@ -229,6 +312,11 @@ pub fn Line(props: &LineProps) -> Html {
                 } else {
                     temp_h_height_f
                 },
+                dark_bg_color: if box_css_p.d_bg_color == String::default() {
+                    box_css_p.bg_color.clone()
+                } else {
+                    box_css_p.d_bg_color.clone()
+                },
             }
         },
         box_css_p,
@@ -245,12 +333,21 @@ pub fn Line(props: &LineProps) -> Html {
             background-image: ${bg_img};
             cursor: ${cursor};
             flex-shrink: ${flex_shrink};
-            transition: all ${d}s;
+            transition: all ${duration}s;
 
             &:hover {
                 background-color: ${hover_bg_color};
                 width: ${hover_width};
                 height: ${hover_height};
+                margin: ${hover_margin};
+                border-radius: ${hover_radius};
+                opacity: ${hover_opacity};
+            }
+
+            @media (prefers-color-scheme: dark) {
+              & {
+                background-color: ${dark_bg_color};
+              }
             }
         "#,
         padding_bottom = box_css.padding_bottom,
@@ -262,10 +359,14 @@ pub fn Line(props: &LineProps) -> Html {
         bg_img = box_css.background_image,
         cursor = box_css.cursor,
         flex_shrink = box_css.flex_shrink,
-        d = box_css.d,
+        duration = box_css.duration,
+        hover_opacity = box_css.hover_opacity,
+        hover_margin = box_css.hover_margin,
+        hover_radius = box_css.hover_radius,
         hover_bg_color = box_css.hover_bg_color,
         hover_width = box_css.hover_width,
         hover_height = box_css.hover_height,
+        dark_bg_color = box_css.dark_bg_color,
     );
 
     html! {

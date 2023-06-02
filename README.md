@@ -10,13 +10,13 @@
 | Image             | 图片 |
 | Line              | 线   |
 | Text              | 文本 |
-| TextEllipsis      | 文本，带省略行数 |
+| TextEllipsis      | 文本，多选省略 |
 
 
 ## 使用如下：
 ```rust
 use yew::prelude::*;
-use yew_quick::{Box, Flex, FlexWay, Text, Image};
+use yew_quick::prelude::*;
 
 #[function_component]
 fn App() -> Html {

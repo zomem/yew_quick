@@ -1,12 +1,15 @@
-use yew::{function_component, html, use_memo, Callback, Children, Html, MouseEvent, Properties};
+use yew::{
+    function_component, html, use_memo, Callback, Children, Html, MouseEvent, NodeRef, Properties,
+};
 
 use regex::Regex;
 use stylist::css;
 
-use crate::{Cursor, FontStyle, FontWeight, TextAlign, WhiteSpace, WordBreak};
+use crate::{Cursor, Display, FontStyle, FontWeight, TextAlign, WhiteSpace, WordBreak};
 
 #[derive(Clone, PartialEq)]
 struct TextCss {
+    display: String,
     width: String,
     height: String,
     padding: String,
@@ -33,14 +36,20 @@ struct TextCss {
     text_align: String,
     word_break: String,
 
-    d: String,
+    duration: String,
+    hover_opacity: String,
+    hover_padding: String,
+    hover_margin: String,
     hover_color: String,
     hover_width: String,
     hover_height: String,
+
+    dark_color: String,
 }
 
 #[derive(Clone, PartialEq)]
 struct TextCssProps {
+    display: Display,
     size: String,
     padding: String,
     margin: String,
@@ -64,13 +73,20 @@ struct TextCssProps {
     text_align: TextAlign,
     word_break: WordBreak,
 
-    d: String,
+    duration: String,
+    h_opacity: String,
+    h_padding: String,
+    h_margin: String,
     h_color: String,
     h_size: String,
+
+    d_color: String,
 }
 
 #[derive(Properties, Clone, PartialEq)]
 pub struct TextProps {
+    #[prop_or(Display::Block)]
+    pub display: Display,
     #[prop_or(String::from("auto auto"))]
     pub size: String,
     #[prop_or(String::from("0"))]
@@ -115,16 +131,27 @@ pub struct TextProps {
     pub word_break: WordBreak,
 
     #[prop_or(String::from("0"))]
-    pub d: String,
+    pub duration: String,
+    #[prop_or(String::from(""))]
+    pub h_opacity: String,
+    #[prop_or(String::from(""))]
+    pub h_padding: String,
+    #[prop_or(String::from(""))]
+    pub h_margin: String,
     #[prop_or(String::from(""))]
     pub h_color: String,
     #[prop_or(String::from(""))]
     pub h_size: String,
 
+    #[prop_or(String::from(""))]
+    pub d_color: String,
+
     #[prop_or_default]
     pub children: Children,
     #[prop_or_default]
     pub onclick: Callback<MouseEvent>,
+    #[prop_or_default]
+    pub node: NodeRef,
 }
 
 /// ### 使用示例
@@ -149,13 +176,18 @@ pub struct TextProps {
 /// text_decoration: String,
 /// text_align: TextAlign,
 /// word_break: WordBreak,
-/// d: String,
+/// duration: String,
+/// h_opacity: String,  //hover 样式 "0.7"
+/// h_padding: String,  //hover 样式 "0 0 12 12"
+/// h_margin: String,  //hover 样式 "0 0 12 12"
 /// h_color: String, // hover 时的文字颜色
 /// h_size: String,  // hover 时的长宽
+/// d_color: String, // dark 模式
 ///```
 #[function_component]
 pub fn Text(props: &TextProps) -> Html {
     let box_css_p: TextCssProps = TextCssProps {
+        display: props.display.clone(),
         size: props.size.clone(),
         padding: props.padding.clone(),
         margin: props.margin.clone(),
@@ -180,9 +212,14 @@ pub fn Text(props: &TextProps) -> Html {
         text_align: props.text_align.clone(),
         word_break: props.word_break.clone(),
 
-        d: props.d.clone(),
+        duration: props.duration.clone(),
+        h_opacity: props.h_opacity.clone(),
+        h_padding: props.h_padding.clone(),
+        h_margin: props.h_margin.clone(),
         h_color: props.h_color.clone(),
         h_size: props.h_size.clone(),
+
+        d_color: props.d_color.clone(),
     };
 
     let box_css = use_memo(
@@ -224,9 +261,6 @@ pub fn Text(props: &TextProps) -> Html {
             } else {
                 temp_max_size[1]
             };
-
-            let temp_padding = box_css_p.padding.as_str();
-            let temp_margin = box_css_p.margin.as_str();
 
             let temp_width_op = op_rex.replace_all(temp_width, " $1 ").to_string();
             let tmep_width_f = if temp_width.contains("%") {
@@ -279,6 +313,9 @@ pub fn Text(props: &TextProps) -> Html {
                 format!("{}{}", temp_max_height, "px")
             };
 
+            let temp_padding = box_css_p.padding.as_str();
+            let temp_margin = box_css_p.margin.as_str();
+
             let temp_padding_c = temp_padding
                 .split(" ")
                 .map(|x| {
@@ -290,6 +327,11 @@ pub fn Text(props: &TextProps) -> Html {
                 })
                 .collect::<Vec<String>>()
                 .join(" ");
+            let padding_value = if w_rex.is_match(temp_padding) {
+                temp_padding.to_owned()
+            } else {
+                temp_padding_c
+            };
             let temp_margin_c = temp_margin
                 .split(" ")
                 .map(|x| {
@@ -301,8 +343,14 @@ pub fn Text(props: &TextProps) -> Html {
                 })
                 .collect::<Vec<String>>()
                 .join(" ");
+            let margin_value = if w_rex.is_match(temp_margin) {
+                temp_margin.to_owned()
+            } else {
+                temp_margin_c
+            };
 
             TextCss {
+                display: box_css_p.display.get_name(),
                 width: if temp_width == "auto" {
                     "auto".to_owned()
                 } else if w_rex.is_match(temp_width) {
@@ -317,16 +365,8 @@ pub fn Text(props: &TextProps) -> Html {
                 } else {
                     temp_height_f
                 },
-                padding: if w_rex.is_match(temp_padding) {
-                    temp_padding.to_owned()
-                } else {
-                    temp_padding_c
-                },
-                margin: if w_rex.is_match(temp_margin) {
-                    temp_margin.to_owned()
-                } else {
-                    temp_margin_c
-                },
+                padding: padding_value.clone(),
+                margin: margin_value.clone(),
 
                 background_image: if box_css_p.bg_image == "0" {
                     "none".to_owned()
@@ -392,9 +432,52 @@ pub fn Text(props: &TextProps) -> Html {
                 text_align: box_css_p.text_align.get_name(),
                 word_break: box_css_p.word_break.get_name(),
 
-                d: box_css_p.d.clone(),
+                duration: box_css_p.duration.clone(),
+                hover_opacity: if box_css_p.h_opacity == String::default() {
+                    box_css_p.opacity.clone()
+                } else {
+                    box_css_p.h_opacity.clone()
+                },
+                hover_padding: if box_css_p.h_padding == String::default() {
+                    padding_value
+                } else {
+                    let temp = box_css_p.h_padding.as_str();
+                    if w_rex.is_match(temp) {
+                        temp.to_string()
+                    } else {
+                        temp.split(" ")
+                            .map(|x| {
+                                if x.contains("%") {
+                                    x.to_string()
+                                } else {
+                                    x.to_string() + "px"
+                                }
+                            })
+                            .collect::<Vec<String>>()
+                            .join(" ")
+                    }
+                },
+                hover_margin: if box_css_p.h_margin == String::default() {
+                    margin_value
+                } else {
+                    let temp = box_css_p.h_margin.as_str();
+                    if w_rex.is_match(temp) {
+                        temp.to_string()
+                    } else {
+                        temp.split(" ")
+                            .map(|x| {
+                                if x.contains("%") {
+                                    x.to_string()
+                                } else {
+                                    x.to_string() + "px"
+                                }
+                            })
+                            .collect::<Vec<String>>()
+                            .join(" ")
+                    }
+                },
                 hover_color: if box_css_p.h_color == String::default() {
-                    box_css_p.color.clone()
+                    "none".to_string()
                 } else {
                     box_css_p.h_color.clone()
                 },
@@ -412,6 +495,11 @@ pub fn Text(props: &TextProps) -> Html {
                 } else {
                     temp_h_height_f
                 },
+                dark_color: if box_css_p.d_color == String::default() {
+                    box_css_p.color.clone()
+                } else {
+                    box_css_p.d_color.clone()
+                },
             }
         },
         box_css_p,
@@ -419,6 +507,7 @@ pub fn Text(props: &TextProps) -> Html {
 
     let class = css!(
         r#"
+            display: ${display};
             width: ${width};
             height: ${height};
             padding: ${padding};
@@ -444,13 +533,23 @@ pub fn Text(props: &TextProps) -> Html {
             text-align: ${text_align};
             word-break: ${word_break};
 
-            transition: all ${d}s;
+            transition: all ${duration}s;
             &:hover {
                 color: ${hover_color};
                 width: ${hover_width};
                 height: ${hover_height};
+                padding: ${hover_padding};
+                margin: ${hover_margin};
+                opacity: ${hover_opacity};
+            }
+
+            @media (prefers-color-scheme: dark) {
+              & {
+                color: ${dark_color};
+              }
             }
         "#,
+        display = box_css.display,
         width = box_css.width,
         height = box_css.height,
         padding = box_css.padding,
@@ -473,10 +572,14 @@ pub fn Text(props: &TextProps) -> Html {
         text_decoration = box_css.text_decoration,
         text_align = box_css.text_align,
         word_break = box_css.word_break,
-        d = box_css.d,
+        duration = box_css.duration,
+        hover_opacity = box_css.hover_opacity,
+        hover_padding = box_css.hover_padding,
+        hover_margin = box_css.hover_margin,
         hover_color = box_css.hover_color,
         hover_width = box_css.hover_width,
         hover_height = box_css.hover_height,
+        dark_color = box_css.dark_color,
     );
 
     let do_click = {
@@ -485,7 +588,7 @@ pub fn Text(props: &TextProps) -> Html {
     };
 
     html! {
-        <span {class} onclick={do_click}>
+        <span {class} onclick={do_click} ref={props.node.clone()}>
         { for props.children.iter() }
         </span>
     }
