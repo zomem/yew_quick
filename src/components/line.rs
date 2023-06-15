@@ -1,14 +1,15 @@
 use yew::{function_component, html, use_memo, Html, Properties};
 
-use regex::Regex;
 use stylist::css;
 
-use crate::{Cursor, SafeType};
+use crate::prelude::{Cursor, SafeType, TimingFn};
+use crate::utils::{add_op_space, is_have_unit};
 
 #[derive(Clone, PartialEq)]
 struct LineCss {
     width: String,
     height: String,
+    margin: String,
     padding_top: String,
     padding_bottom: String,
     border_radius: String,
@@ -19,6 +20,7 @@ struct LineCss {
     opacity: String,
 
     duration: String,
+    timing_fn: String,
     hover_opacity: String,
     hover_margin: String,
     hover_radius: String,
@@ -35,6 +37,7 @@ struct LineCss {
 struct LineCssProps {
     size: String,
     radius: String,
+    margin: String,
 
     bg_color: String,
     bg_image: String,
@@ -44,6 +47,7 @@ struct LineCssProps {
     opacity: String,
 
     duration: String,
+    timing_fn: TimingFn,
     h_opacity: String,
     h_margin: String,
     h_radius: String,
@@ -63,6 +67,8 @@ pub struct LineProps {
     pub safe: SafeType,
     #[prop_or(String::from("0"))]
     pub radius: String,
+    #[prop_or(String::from("0"))]
+    pub margin: String,
 
     #[prop_or(String::from("transparent"))]
     pub bg_color: String,
@@ -79,6 +85,8 @@ pub struct LineProps {
 
     #[prop_or(String::from("0"))]
     pub duration: String,
+    #[prop_or(TimingFn::Ease)]
+    pub timing_fn: TimingFn,
     #[prop_or(String::from(""))]
     pub h_opacity: String,
     #[prop_or(String::from(""))]
@@ -98,12 +106,14 @@ pub struct LineProps {
 ///```
 /// size: String,
 /// radius: String,
+/// margin: String, // "1 2 2 1"
 /// bg_color: String,
 /// bg_image: String,
 /// cursor: Cursor,
 /// flex_shrink: String,
 /// opacity: String,
 /// duration: String,
+/// timing_fn: TimingFn, // transition 的动画方式
 /// h_opacity: String,  //hover 样式 "0.7"
 /// h_margin: String,  //hover 样式 "0 0 12 12"
 /// h_radius: String,    //hover 样式 "12"
@@ -118,6 +128,7 @@ pub fn Line(props: &LineProps) -> Html {
         size: props.size.clone(),
 
         radius: props.radius.clone(),
+        margin: props.margin.clone(),
 
         bg_color: props.bg_color.clone(),
         bg_image: props.bg_image.clone(),
@@ -127,6 +138,7 @@ pub fn Line(props: &LineProps) -> Html {
         flex_shrink: props.flex_shrink.clone(),
 
         duration: props.duration.clone(),
+        timing_fn: props.timing_fn.clone(),
         h_opacity: props.h_opacity.clone(),
         h_margin: props.h_margin.clone(),
         h_radius: props.h_radius.clone(),
@@ -138,8 +150,6 @@ pub fn Line(props: &LineProps) -> Html {
 
     let box_css = use_memo(
         |box_css_p| {
-            let w_rex = Regex::new("[a-zA-Z]+").unwrap();
-            let op_rex = Regex::new(r"([\+\-\*/])+").unwrap();
             let temp_size = box_css_p.size.split(" ").collect::<Vec<&str>>();
             let temp_h_size = if box_css_p.h_size == String::default() {
                 temp_size.clone()
@@ -161,26 +171,26 @@ pub fn Line(props: &LineProps) -> Html {
                 temp_h_size[1]
             };
 
-            let temp_width_op = op_rex.replace_all(temp_width, " $1 ").to_string();
+            let temp_width_op = add_op_space(temp_width);
             let tmep_width_f = if temp_width.contains("%") {
                 format!("{}", temp_width)
             } else {
                 format!("{}{}", temp_width, "px")
             };
-            let temp_height_op = op_rex.replace_all(temp_height, " $1 ").to_string();
+            let temp_height_op = add_op_space(temp_height);
             let temp_height_f = if temp_height.contains("%") {
                 format!("{}", temp_height)
             } else {
                 format!("{}{}", temp_height, "px")
             };
 
-            let temp_h_width_op = op_rex.replace_all(temp_h_width, " $1 ").to_string();
+            let temp_h_width_op = add_op_space(temp_h_width);
             let tmep_h_width_f = if temp_h_width.contains("%") {
                 format!("{}", temp_h_width)
             } else {
                 format!("{}{}", temp_h_width, "px")
             };
-            let temp_h_height_op = op_rex.replace_all(temp_h_height, " $1 ").to_string();
+            let temp_h_height_op = add_op_space(temp_h_height);
             let temp_h_height_f = if temp_h_height.contains("%") {
                 format!("{}", temp_h_height)
             } else {
@@ -188,6 +198,7 @@ pub fn Line(props: &LineProps) -> Html {
             };
 
             let temp_radius = box_css_p.radius.as_str();
+            let temp_margin = box_css_p.margin.as_str();
 
             let temp_radius_c = temp_radius
                 .split(" ")
@@ -200,10 +211,27 @@ pub fn Line(props: &LineProps) -> Html {
                 })
                 .collect::<Vec<String>>()
                 .join(" ");
-            let radius_value = if w_rex.is_match(temp_radius) {
+            let radius_value = if is_have_unit(temp_radius) {
                 temp_radius.to_owned()
             } else {
                 temp_radius_c
+            };
+
+            let temp_margin_c = temp_margin
+                .split(" ")
+                .map(|x| {
+                    if x.contains("%") {
+                        x.to_string()
+                    } else {
+                        x.to_string() + "px"
+                    }
+                })
+                .collect::<Vec<String>>()
+                .join(" ");
+            let margin_value = if is_have_unit(temp_margin) {
+                temp_margin.to_owned()
+            } else {
+                temp_margin_c
             };
 
             let p_top = match props.safe {
@@ -220,19 +248,20 @@ pub fn Line(props: &LineProps) -> Html {
             LineCss {
                 width: if temp_width == "auto" {
                     "auto".to_owned()
-                } else if w_rex.is_match(temp_width) {
+                } else if is_have_unit(temp_width) {
                     temp_width_op
                 } else {
                     tmep_width_f
                 },
                 height: if temp_height == "auto" {
                     "auto".to_owned()
-                } else if w_rex.is_match(temp_height) {
+                } else if is_have_unit(temp_height) {
                     temp_height_op
                 } else {
                     temp_height_f
                 },
                 opacity: box_css_p.opacity.clone(),
+                margin: margin_value.clone(),
                 padding_top: p_top,
                 padding_bottom: p_bottom,
                 border_radius: radius_value.clone(),
@@ -250,16 +279,17 @@ pub fn Line(props: &LineProps) -> Html {
                 flex_shrink: box_css_p.flex_shrink.clone(),
 
                 duration: box_css_p.duration.clone(),
+                timing_fn: box_css_p.timing_fn.get_name(),
                 hover_opacity: if box_css_p.h_opacity == String::default() {
                     box_css_p.opacity.clone()
                 } else {
                     box_css_p.h_opacity.clone()
                 },
                 hover_margin: if box_css_p.h_margin == String::default() {
-                    "0".to_string()
+                    margin_value
                 } else {
                     let temp = box_css_p.h_margin.as_str();
-                    if w_rex.is_match(temp) {
+                    if is_have_unit(temp) {
                         temp.to_string()
                     } else {
                         temp.split(" ")
@@ -278,7 +308,7 @@ pub fn Line(props: &LineProps) -> Html {
                     radius_value
                 } else {
                     let temp = box_css_p.h_radius.as_str();
-                    if w_rex.is_match(temp) {
+                    if is_have_unit(temp) {
                         temp.to_string()
                     } else {
                         temp.split(" ")
@@ -300,14 +330,14 @@ pub fn Line(props: &LineProps) -> Html {
                 },
                 hover_width: if temp_h_width == "auto" {
                     "auto".to_owned()
-                } else if w_rex.is_match(temp_h_width) {
+                } else if is_have_unit(temp_h_width) {
                     temp_h_width_op
                 } else {
                     tmep_h_width_f
                 },
                 hover_height: if temp_h_height == "auto" {
                     "auto".to_owned()
-                } else if w_rex.is_match(temp_h_height) {
+                } else if is_have_unit(temp_h_height) {
                     temp_h_height_op
                 } else {
                     temp_h_height_f
@@ -328,12 +358,14 @@ pub fn Line(props: &LineProps) -> Html {
             height: ${height};
             padding-top: ${padding_top};
             padding-bottom: ${padding_bottom};
+            margin: ${margin};
             border-radius: ${radius};
             background-color: ${bg_color};
             background-image: ${bg_img};
             cursor: ${cursor};
             flex-shrink: ${flex_shrink};
-            transition: all ${duration}s;
+
+            transition: all ${duration}s ${timing_fn};
 
             &:hover {
                 background-color: ${hover_bg_color};
@@ -352,6 +384,7 @@ pub fn Line(props: &LineProps) -> Html {
         "#,
         padding_bottom = box_css.padding_bottom,
         padding_top = box_css.padding_top,
+        margin = box_css.margin,
         width = box_css.width,
         height = box_css.height,
         radius = box_css.border_radius,
@@ -360,6 +393,7 @@ pub fn Line(props: &LineProps) -> Html {
         cursor = box_css.cursor,
         flex_shrink = box_css.flex_shrink,
         duration = box_css.duration,
+        timing_fn = box_css.timing_fn,
         hover_opacity = box_css.hover_opacity,
         hover_margin = box_css.hover_margin,
         hover_radius = box_css.hover_radius,

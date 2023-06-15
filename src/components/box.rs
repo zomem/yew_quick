@@ -2,13 +2,13 @@ use yew::{
     function_component, html, use_memo, Callback, Children, Html, MouseEvent, NodeRef, Properties,
 };
 
-use regex::Regex;
 use stylist::css;
 
-use crate::{
+use crate::prelude::{
     BorderStyle, BoxSizing, Cursor, Display, FontStyle, FontWeight, ImageMode, Overflow, Position,
-    TextAlign, WhiteSpace, WordBreak,
+    TextAlign, TimingFn, WhiteSpace, WordBreak,
 };
+use crate::utils::{add_op_space, is_have_unit};
 
 #[derive(Clone, PartialEq)]
 struct BoxCss {
@@ -55,6 +55,7 @@ struct BoxCss {
     flex_shrink: String,
 
     duration: String,
+    timing_fn: String,
     hover_opacity: String,
     hover_padding: String,
     hover_margin: String,
@@ -115,6 +116,7 @@ struct BoxCssProps {
     flex_shrink: String,
 
     duration: String,
+    timing_fn: TimingFn,
     h_opacity: String,
     h_padding: String,
     h_margin: String,
@@ -211,6 +213,8 @@ pub struct BoxProps {
 
     #[prop_or(String::from("0"))]
     pub duration: String,
+    #[prop_or(TimingFn::Ease)]
+    pub timing_fn: TimingFn,
     #[prop_or(String::from(""))]
     pub h_opacity: String,
     #[prop_or(String::from(""))]
@@ -288,6 +292,7 @@ pub struct BoxProps {
 /// word_break: WordBreak,
 /// flex_shrink: String,
 /// duration: String, // transition 时间 s
+/// timing_fn: TimingFn, // transition 的动画方式
 /// h_opacity: String,  //hover 样式 "0.7"
 /// h_padding: String,  //hover 样式 "0 0 12 12"
 /// h_margin: String,  //hover 样式 "0 0 12 12"
@@ -345,6 +350,7 @@ pub fn Box(props: &BoxProps) -> Html {
         flex_shrink: props.flex_shrink.clone(),
 
         duration: props.duration.clone(),
+        timing_fn: props.timing_fn.clone(),
         h_opacity: props.h_opacity.clone(),
         h_padding: props.h_padding.clone(),
         h_margin: props.h_margin.clone(),
@@ -364,8 +370,6 @@ pub fn Box(props: &BoxProps) -> Html {
 
     let box_css = use_memo(
         |box_css_p| {
-            let w_rex = Regex::new("[a-zA-Z]+").unwrap();
-            let op_rex = Regex::new(r"([\+\-\*/])+").unwrap();
             let temp_size = box_css_p.size.split(" ").collect::<Vec<&str>>();
             let temp_h_size = if box_css_p.h_size == String::default() {
                 temp_size.clone()
@@ -402,51 +406,51 @@ pub fn Box(props: &BoxProps) -> Html {
                 temp_max_size[1]
             };
 
-            let temp_width_op = op_rex.replace_all(temp_width, " $1 ").to_string();
+            let temp_width_op = add_op_space(temp_width);
             let tmep_width_f = if temp_width.contains("%") {
                 format!("{}", temp_width)
             } else {
                 format!("{}{}", temp_width, "px")
             };
-            let temp_height_op = op_rex.replace_all(temp_height, " $1 ").to_string();
+            let temp_height_op = add_op_space(temp_height);
             let temp_height_f = if temp_height.contains("%") {
                 format!("{}", temp_height)
             } else {
                 format!("{}{}", temp_height, "px")
             };
 
-            let temp_h_width_op = op_rex.replace_all(temp_h_width, " $1 ").to_string();
+            let temp_h_width_op = add_op_space(temp_h_width);
             let tmep_h_width_f = if temp_h_width.contains("%") {
                 format!("{}", temp_h_width)
             } else {
                 format!("{}{}", temp_h_width, "px")
             };
-            let temp_h_height_op = op_rex.replace_all(temp_h_height, " $1 ").to_string();
+            let temp_h_height_op = add_op_space(temp_h_height);
             let temp_h_height_f = if temp_h_height.contains("%") {
                 format!("{}", temp_h_height)
             } else {
                 format!("{}{}", temp_h_height, "px")
             };
 
-            let temp_min_width_op = op_rex.replace_all(temp_min_width, " $1 ").to_string();
+            let temp_min_width_op = add_op_space(temp_min_width);
             let tmep_min_width_f = if temp_min_width.contains("%") {
                 format!("{}", temp_min_width)
             } else {
                 format!("{}{}", temp_min_width, "px")
             };
-            let temp_min_height_op = op_rex.replace_all(temp_min_height, " $1 ").to_string();
+            let temp_min_height_op = add_op_space(temp_min_height);
             let temp_min_height_f = if temp_min_height.contains("%") {
                 format!("{}", temp_min_height)
             } else {
                 format!("{}{}", temp_min_height, "px")
             };
-            let temp_max_width_op = op_rex.replace_all(temp_max_width, " $1 ").to_string();
+            let temp_max_width_op = add_op_space(temp_max_width);
             let tmep_max_width_f = if temp_max_width.contains("%") {
                 format!("{}", temp_max_width)
             } else {
                 format!("{}{}", temp_max_width, "px")
             };
-            let temp_max_height_op = op_rex.replace_all(temp_max_height, " $1 ").to_string();
+            let temp_max_height_op = add_op_space(temp_max_height);
             let temp_max_height_f = if temp_max_height.contains("%") {
                 format!("{}", temp_max_height)
             } else {
@@ -469,7 +473,7 @@ pub fn Box(props: &BoxProps) -> Html {
                 })
                 .collect::<Vec<String>>()
                 .join(" ");
-            let padding_value = if w_rex.is_match(temp_padding) {
+            let padding_value = if is_have_unit(temp_padding) {
                 temp_padding.to_owned()
             } else {
                 temp_padding_c
@@ -485,7 +489,7 @@ pub fn Box(props: &BoxProps) -> Html {
                 })
                 .collect::<Vec<String>>()
                 .join(" ");
-            let margin_value = if w_rex.is_match(temp_margin) {
+            let margin_value = if is_have_unit(temp_margin) {
                 temp_margin.to_owned()
             } else {
                 temp_margin_c
@@ -501,7 +505,7 @@ pub fn Box(props: &BoxProps) -> Html {
                 })
                 .collect::<Vec<String>>()
                 .join(" ");
-            let radius_value = if w_rex.is_match(temp_radius) {
+            let radius_value = if is_have_unit(temp_radius) {
                 temp_radius.to_owned()
             } else {
                 temp_radius_c
@@ -517,7 +521,7 @@ pub fn Box(props: &BoxProps) -> Html {
                 })
                 .collect::<Vec<String>>()
                 .join(" ");
-            let border_width_value = if w_rex.is_match(temp_border_width) {
+            let border_width_value = if is_have_unit(temp_border_width) {
                 temp_border_width.to_owned()
             } else {
                 temp_border_width_c
@@ -526,14 +530,14 @@ pub fn Box(props: &BoxProps) -> Html {
                 display: box_css_p.display.get_name(),
                 width: if temp_width == "auto" {
                     "auto".to_owned()
-                } else if w_rex.is_match(temp_width) {
+                } else if is_have_unit(temp_width) {
                     temp_width_op
                 } else {
                     tmep_width_f
                 },
                 height: if temp_height == "auto" {
                     "auto".to_owned()
-                } else if w_rex.is_match(temp_height) {
+                } else if is_have_unit(temp_height) {
                     temp_height_op
                 } else {
                     temp_height_f
@@ -562,42 +566,74 @@ pub fn Box(props: &BoxProps) -> Html {
                 white_space: box_css_p.white_space.get_name(),
                 min_width: if temp_min_width == "auto" {
                     "auto".to_owned()
-                } else if w_rex.is_match(temp_min_width) {
+                } else if is_have_unit(temp_min_width) {
                     temp_min_width_op
                 } else {
                     tmep_min_width_f
                 },
                 min_height: if temp_min_height == "auto" {
                     "auto".to_owned()
-                } else if w_rex.is_match(temp_min_height) {
+                } else if is_have_unit(temp_min_height) {
                     temp_min_height_op
                 } else {
                     temp_min_height_f
                 },
                 max_width: if temp_max_width == "auto" {
                     "none".to_owned()
-                } else if w_rex.is_match(temp_max_width) {
+                } else if is_have_unit(temp_max_width) {
                     temp_max_width_op
                 } else {
                     tmep_max_width_f
                 },
                 max_height: if temp_max_height == "auto" {
                     "none".to_owned()
-                } else if w_rex.is_match(temp_max_height) {
+                } else if is_have_unit(temp_max_height) {
                     temp_max_height_op
                 } else {
                     temp_max_height_f
                 },
                 box_shadow: box_css_p.shadow.clone(),
                 position: box_css_p.position.get_name(),
-                top: box_css_p.top.clone(),
-                right: box_css_p.right.clone(),
-                bottom: box_css_p.bottom.clone(),
-                left: box_css_p.left.clone(),
+                top: if box_css_p.top.contains("%") {
+                    box_css_p.top.clone()
+                } else {
+                    if box_css_p.top == String::from("auto") {
+                        box_css_p.top.clone()
+                    } else {
+                        box_css_p.top.clone() + "px"
+                    }
+                },
+                right: if box_css_p.right.contains("%") {
+                    box_css_p.right.clone()
+                } else {
+                    if box_css_p.right == String::from("auto") {
+                        box_css_p.right.clone()
+                    } else {
+                        box_css_p.right.clone() + "px"
+                    }
+                },
+                bottom: if box_css_p.bottom.contains("%") {
+                    box_css_p.bottom.clone()
+                } else {
+                    if box_css_p.bottom == String::from("auto") {
+                        box_css_p.bottom.clone()
+                    } else {
+                        box_css_p.bottom.clone() + "px"
+                    }
+                },
+                left: if box_css_p.left.contains("%") {
+                    box_css_p.left.clone()
+                } else {
+                    if box_css_p.left == String::from("auto") {
+                        box_css_p.left.clone()
+                    } else {
+                        box_css_p.left.clone() + "px"
+                    }
+                },
                 z_index: box_css_p.z_index.clone(),
                 opacity: box_css_p.opacity.clone(),
 
-                font_size: if w_rex.is_match(&box_css_p.font_size) {
+                font_size: if is_have_unit(&box_css_p.font_size) {
                     box_css_p.font_size.to_owned()
                 } else {
                     box_css_p.font_size.clone() + "px"
@@ -605,12 +641,12 @@ pub fn Box(props: &BoxProps) -> Html {
                 color: box_css_p.color.clone(),
                 font_style: box_css_p.font_style.get_name(),
                 font_weight: box_css_p.font_weight.get_name(),
-                letter_spacing: if w_rex.is_match(&box_css_p.letter_spacing) {
+                letter_spacing: if is_have_unit(&box_css_p.letter_spacing) {
                     box_css_p.letter_spacing.to_owned()
                 } else {
                     box_css_p.letter_spacing.clone() + "px"
                 },
-                line_height: if w_rex.is_match(&box_css_p.line_height) {
+                line_height: if is_have_unit(&box_css_p.line_height) {
                     box_css_p.line_height.to_owned()
                 } else {
                     box_css_p.line_height.clone() + "px"
@@ -621,6 +657,7 @@ pub fn Box(props: &BoxProps) -> Html {
                 flex_shrink: box_css_p.flex_shrink.clone(),
 
                 duration: box_css_p.duration.clone(),
+                timing_fn: box_css_p.timing_fn.get_name(),
                 hover_opacity: if box_css_p.h_opacity == String::default() {
                     box_css_p.opacity.clone()
                 } else {
@@ -630,7 +667,7 @@ pub fn Box(props: &BoxProps) -> Html {
                     padding_value
                 } else {
                     let temp = box_css_p.h_padding.as_str();
-                    if w_rex.is_match(temp) {
+                    if is_have_unit(temp) {
                         temp.to_string()
                     } else {
                         temp.split(" ")
@@ -649,7 +686,7 @@ pub fn Box(props: &BoxProps) -> Html {
                     margin_value
                 } else {
                     let temp = box_css_p.h_margin.as_str();
-                    if w_rex.is_match(temp) {
+                    if is_have_unit(temp) {
                         temp.to_string()
                     } else {
                         temp.split(" ")
@@ -668,7 +705,7 @@ pub fn Box(props: &BoxProps) -> Html {
                     radius_value
                 } else {
                     let temp = box_css_p.h_radius.as_str();
-                    if w_rex.is_match(temp) {
+                    if is_have_unit(temp) {
                         temp.to_string()
                     } else {
                         temp.split(" ")
@@ -687,7 +724,7 @@ pub fn Box(props: &BoxProps) -> Html {
                     border_width_value
                 } else {
                     let temp = box_css_p.h_border_width.as_str();
-                    if w_rex.is_match(temp) {
+                    if is_have_unit(temp) {
                         temp.to_string()
                     } else {
                         temp.split(" ")
@@ -718,20 +755,20 @@ pub fn Box(props: &BoxProps) -> Html {
                     box_css_p.h_color.clone()
                 },
                 hover_shadow: if box_css_p.h_shadow == String::default() {
-                    "none".to_string()
+                    "null".to_string()
                 } else {
                     box_css_p.h_shadow.clone()
                 },
                 hover_width: if temp_h_width == "auto" {
                     "auto".to_owned()
-                } else if w_rex.is_match(temp_h_width) {
+                } else if is_have_unit(temp_h_width) {
                     temp_h_width_op
                 } else {
                     tmep_h_width_f
                 },
                 hover_height: if temp_h_height == "auto" {
                     "auto".to_owned()
-                } else if w_rex.is_match(temp_h_height) {
+                } else if is_have_unit(temp_h_height) {
                     temp_h_height_op
                 } else {
                     temp_h_height_f
@@ -807,7 +844,7 @@ pub fn Box(props: &BoxProps) -> Html {
             flex-shrink: ${flex_shrink};
 
 
-            transition: all ${duration}s;
+            transition: all ${duration}s ${timing_fn};
 
             &:hover {
                 background-color: ${hover_bg_color};
@@ -872,6 +909,7 @@ pub fn Box(props: &BoxProps) -> Html {
         word_break = box_css.word_break,
         flex_shrink = box_css.flex_shrink,
         duration = box_css.duration,
+        timing_fn = box_css.timing_fn,
         hover_opacity = box_css.hover_opacity,
         hover_padding = box_css.hover_padding,
         hover_margin = box_css.hover_margin,
@@ -889,13 +927,8 @@ pub fn Box(props: &BoxProps) -> Html {
         dark_color = box_css.dark_color,
     );
 
-    let do_click = {
-        let click = props.onclick.clone();
-        Callback::from(move |e: MouseEvent| click.emit(e))
-    };
-
     html! {
-        <div {class} onclick={do_click} ref={props.node.clone()} >
+        <div {class} onclick={props.onclick.clone()} ref={props.node.clone()} >
         { for props.children.iter() }
         </div>
     }

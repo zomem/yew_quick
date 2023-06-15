@@ -10,7 +10,7 @@
 | Image             | 图片 |
 | Line              | 线   |
 | Text              | 文本 |
-| TextEllipsis      | 文本，多选省略 |
+| TextEllipsis      | 文本，多行省略 |
 
 
 ## 使用如下：

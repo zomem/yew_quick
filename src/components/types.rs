@@ -91,6 +91,30 @@ impl ImageMode {
 }
 
 #[derive(Clone, PartialEq)]
+pub enum TimingFn {
+    Ease,
+    EaseIn,
+    EaseOut,
+    EaseInOut,
+    Linear,
+    StepStart,
+    StepEnd,
+}
+impl TimingFn {
+    pub fn get_name(&self) -> String {
+        match &self {
+            &TimingFn::Ease => "ease".to_owned(),
+            &TimingFn::EaseIn => "ease-in".to_owned(),
+            &TimingFn::EaseOut => "ease-out".to_owned(),
+            &TimingFn::EaseInOut => "ease-in-out".to_owned(),
+            &TimingFn::Linear => "linear".to_owned(),
+            &TimingFn::StepStart => "step-start".to_owned(),
+            &TimingFn::StepEnd => "step-end".to_owned(),
+        }
+    }
+}
+
+#[derive(Clone, PartialEq)]
 pub enum Cursor {
     Unset,
     Auto,
